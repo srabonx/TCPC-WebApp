@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">TCPC</string>
+    <string name="web_url">https://www.pctcd.com/</string>
 </resources>

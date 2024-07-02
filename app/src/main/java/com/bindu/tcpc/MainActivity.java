@@ -1,9 +1,19 @@
 package com.bindu.tcpc;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.http.SslError;
 import android.os.Bundle;
+import android.webkit.SslErrorHandler;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedDispatcher;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -11,9 +21,10 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    WebView m_webView;
+    private WebView m_webView;
 
     @Override
+    @SuppressLint("SetJavaScriptEnabled")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
@@ -24,9 +35,78 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        m_webView = findViewById(R.id.mainWebView);
-        m_webView.getSettings().setJavaScriptEnabled(true);
-        m_webView.loadUrl("https://www.pctcd.com/");
+
+        m_webView = (WebView) findViewById(R.id.mainWebView);
+
+        WebSettings settings = m_webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setMinimumFontSize(1);
+        settings.setMinimumLogicalFontSize(1);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setAllowFileAccess(true);
+        settings.setSaveFormData(false);
+        settings.setSavePassword(false);
+
+
+
+
+        m_webView.setWebViewClient(new WebViewController());
+
+        if(IsNetworkConnected())
+        {
+            m_webView.loadUrl(getString(R.string.web_url));
+        }
 
     }
+
+    private static int m_timeInterval = 2000;
+    private static long m_backPressTime = 0;
+
+    @SuppressLint("MissingSuperCall")
+    @Override
+    public void onBackPressed()
+    {
+        if(!m_webView.canGoBack())
+        {
+
+            if(m_backPressTime + m_timeInterval > System.currentTimeMillis())
+            {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_HOME);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+            else
+            {
+                Toast.makeText(getBaseContext(),"Press back again to exit", Toast.LENGTH_SHORT).show();
+            }
+            m_backPressTime = System.currentTimeMillis();
+        }
+        else
+            m_webView.goBack();
+
+    }
+
+    private boolean IsNetworkAvailable()
+    {
+        ConnectivityManager cm = (ConnectivityManager) getBaseContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getActiveNetworkInfo() != null;
+    }
+
+    private boolean IsNetworkConnected()
+    {
+        try
+        {
+            String command = "ping -c 1 google.com";
+            return (Runtime.getRuntime().exec(command).waitFor() == 0);
+        }
+        catch (Exception e) {
+            return false;
+        }
+    }
+
 }
